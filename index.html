@@ -194,6 +194,9 @@ textarea.input{min-height:110px;resize:vertical;line-height:1.6}
 .ff .glassy{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .ff .scrim{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(17,20,24,.5)}
 .ff .sheet.glassy{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}
+.themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.theme-opt{background:var(--field);border-radius:16px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--sub);text-align:center}
+.theme-opt[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -204,7 +207,7 @@ textarea.input{min-height:110px;resize:vertical;line-height:1.6}
   <div class="top-in">
     <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19C5 11 10 5 20 5c0 10-6 15-14 15"/><path d="M5 19l8-8"/></svg>그린 마일리지</div>
     <div class="top-r">
-      <button class="iconbtn" id="themeBtn" data-act="theme"></button>
+      <button class="iconbtn" id="settingsBtn" data-act="settings" aria-label="설정" title="설정"></button>
       <select class="me-sel" id="meSel" aria-label="로그인한 학생 (데모)" hidden></select>
       <div class="seg" role="group" aria-label="보기 전환">
         <button id="roleT" data-act="role" data-r="t">교사</button>
@@ -239,6 +242,7 @@ const ICON={
   rules:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/>',
   records:'<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
   appeal:'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h6"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   auto:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'
@@ -321,13 +325,13 @@ const KEY='gm-demo-v2',PKEY='gm-demo-prefs-v2';
 function load(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
 function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 let S=load(KEY)||seed();
-const PDEF={teacher:'정하늘',sender:'school',sms:false,smsTo:'parent',recent:[],lastCls:'2-1',lastType:'minus',lastRule:null,me:'20315',recentSearch:[],theme:'system'};
+const PDEF={teacher:'정하늘',sender:'school',sms:false,smsTo:'parent',recent:[],lastCls:'2-1',lastType:'minus',lastRule:null,me:'20315',recentSearch:[],theme:'light'};
 let P=Object.assign({},PDEF,load(PKEY)||{});
+if(!P.themeSet)P.theme='light'; // 직접 고른 적이 없으면 밝은 화면이 기본
 const save=()=>store(KEY,S), saveP=()=>store(PKEY,P);
 const THEMES={system:['auto','기기 설정 따름'],light:['sun','밝은 화면'],dark:['moon','어두운 화면']};
 function applyTheme(){const t=THEMES[P.theme]?P.theme:'system',el=document.documentElement;
-  if(t==='system')el.removeAttribute('data-theme');else el.setAttribute('data-theme',t);
-  const b=document.getElementById('themeBtn');b.innerHTML=svg(THEMES[t][0]);b.title=b.ariaLabel=`테마: ${THEMES[t][1]} (눌러서 바꾸기)`;}
+  if(t==='system')el.removeAttribute('data-theme');else el.setAttribute('data-theme',t);}
 
 /* ---------- 계산 ---------- */
 const stu=hb=>S.students.find(s=>s.hb===hb);
@@ -344,10 +348,13 @@ const SENDERS={school:'학교 대표번호 · 051-000-0000 (예시)',office:'학
 /* ---------- 화면 상태 ---------- */
 const V={give:{cls:P.lastCls,sel:new Set(),type:P.lastType,rule:P.lastRule,pts:P.lastRule?rule(P.lastRule)?.pts:null,at:nowLocal(),q:''},
   q:'',sel:null,filter:'all',statCls:P.lastCls,rtype:'minus',rq:'',sfilter:'all',confirmReset:false};
-const TNAV=[['t-home','홈','home'],['t-give','부여','give'],['t-search','검색','search'],['t-vol','봉사','vol'],['t-rules','규정','rules']];
-const SNAV=[['s-home','홈','home'],['s-records','기록','records'],['s-appeals','이의신청','appeal'],['s-vol','봉사','vol'],['s-rules','규정','rules']];
-function route(){const h=location.hash.slice(1);return [...TNAV,...SNAV].some(n=>n[0]===h)?h:'t-home'}
-function go(r){if(location.hash.slice(1)===r)render();else location.hash=r;window.scrollTo(0,0)}
+const TNAV=[['t-home','홈','home'],['t-vol','봉사','vol'],['t-give','부여','give'],['t-search','검색','search'],['t-rules','규정','rules']];
+const SNAV=[['s-home','홈','home'],['s-vol','봉사','vol'],['s-records','기록','records'],['s-appeals','이의신청','appeal'],['s-rules','규정','rules']];
+// 화면 상태는 페이지 안에 두고, 주소(#)는 따라가게만 함. 주소 변경이 막힌 환경에서도 메뉴가 동작하도록
+const validRoute=h=>[...TNAV,...SNAV].some(n=>n[0]===h);
+let CUR=(()=>{try{const h=location.hash.slice(1);return validRoute(h)?h:'t-home'}catch(e){return 't-home'}})();
+function route(){return CUR}
+function go(r){CUR=r;try{if(location.hash.slice(1)!==r)history.replaceState(null,'','#'+r)}catch(e){}render();window.scrollTo(0,0)}
 
 /* ---------- 렌더 ---------- */
 function render(){
@@ -358,7 +365,7 @@ function render(){
   const nav=role==='t'?TNAV:SNAV;
   const badge={ 't-home':S.appeals.filter(a=>a.to===P.teacher&&a.status==='pending').length,
     's-appeals':S.appeals.filter(a=>a.hb===P.me&&a.status!=='pending'&&!a.seen).length };
-  const navHTML=nav.map(([id,label,ic])=>`<a href="#${id}" class="nav-i" ${id===r?'aria-current="page"':''}>${svg(ic)}<span>${label}</span>${badge[id]?`<span class="badge">${badge[id]}</span>`:''}</a>`).join('');
+  const navHTML=nav.map(([id,label,ic])=>`<button class="nav-i" data-act="nav" data-r="${id}" ${id===r?'aria-current="page"':''}>${svg(ic)}<span>${label}</span>${badge[id]?`<span class="badge">${badge[id]}</span>`:''}</button>`).join('');
   $('#side').innerHTML=navHTML;$('#tabbar').innerHTML=navHTML;
   const views={'t-home':vTHome,'t-give':vGive,'t-search':vSearch,'t-vol':vTVol,'t-rules':vRules,'s-home':vSHome,'s-records':vSRecords,'s-appeals':vSAppeals,'s-vol':vSVol,'s-rules':vRules};
   $('#main').innerHTML=views[r]();
@@ -419,7 +426,7 @@ function vTHome(){
       <div><div class="flabel">많이 나온 벌점 사유</div><div class="list">${topR.map(([id,n])=>`<div class="li"><div class="main"><div class="t" style="font-size:14px">${esc(rule(id).text)}</div></div><span class="s num">${n}건</span></div>`).join('')||'<p class="empty">아직 없어요.</p>'}</div></div>
     </section>
   </div>
-  <section class="card"><div class="card-h"><h2>최근 내가 부여한 기록</h2><a class="link" href="#t-give">부여하기</a></div>
+  <section class="card"><div class="card-h"><h2>최근 내가 부여한 기록</h2><button class="link" data-act="nav" data-r="t-give">부여하기</button></div>
     <div class="list">${mine.length?mine.map(r=>recRow(r,{showStudent:true})).join(''):'<p class="empty">아직 부여한 기록이 없어요.</p>'}</div></section>
   ${notice}
   <div><button class="btn sm danger" data-act="reset">${V.confirmReset?'한 번 더 누르면 처음 상태로 돌아가요':'데모 데이터 초기화'}</button></div>`;
@@ -556,13 +563,13 @@ function vSHome(){
   const news=S.appeals.filter(a=>a.hb===s.hb&&a.status!=='pending'&&!a.seen);
   const open=S.vols.filter(v=>v.open&&v.apps.length<v.slots&&!v.apps.includes(s.hb));
   return `<h1 class="title">${esc(s.name)}님의 마일리지</h1><p class="lead">${s.hb} · ${clsName(s.cls)} ${s.no}번</p>
-  ${news.length?`<a class="card" href="#s-appeals" style="text-decoration:none;color:inherit;flex-direction:row;align-items:center">
-    <span class="chip info">새 결과</span><span style="flex:1">이의신청 결과가 ${news.length}건 나왔어요</span><span class="link">보기</span></a>`:''}
+  ${news.length?`<button class="card" data-act="nav" data-r="s-appeals" style="flex-direction:row;align-items:center;text-align:left;width:100%">
+    <span class="chip info">새 결과</span><span style="flex:1">이의신청 결과가 ${news.length}건 나왔어요</span><span class="link">보기</span></button>`:''}
   <section class="card">${stuSummary(s)}</section>
-  <section class="card"><div class="card-h"><h2>최근 기록</h2><a class="link" href="#s-records">전체 보기</a></div>
+  <section class="card"><div class="card-h"><h2>최근 기록</h2><button class="link" data-act="nav" data-r="s-records">전체 보기</button></div>
     <div class="list">${rs.length?rs.map(r=>recRow(r,{act:'recS'})).join(''):'<p class="empty">아직 기록이 없어요.</p>'}</div></section>
-  ${open.length?`<a class="card" href="#s-vol" style="text-decoration:none;color:inherit;flex-direction:row;align-items:center">
-    <span style="flex:1">신청할 수 있는 봉사가 ${open.length}건 있어요</span><span class="link">보러 가기</span></a>`:''}
+  ${open.length?`<button class="card" data-act="nav" data-r="s-vol" style="flex-direction:row;align-items:center;text-align:left;width:100%">
+    <span style="flex:1">신청할 수 있는 봉사가 ${open.length}건 있어요</span><span class="link">보러 가기</span></button>`:''}
   ${notice}`;
 }
 /* 학생 · 기록 */
@@ -608,13 +615,18 @@ function recDetail(r){const s=stu(r.hb),R=rule(r.rule);return `<dl class="kv"><d
   <dt>문자</dt><dd>${r.sms?'보냄':'안 보냄'}</dd>${r.canceled?`<dt>취소</dt><dd>${esc(r.canceled.reason)} · ${fmt(r.canceled.at)}</dd>`:''}</dl>`}
 
 const SH={
+  settings(){sheet(`<h3>설정</h3>
+    <div><div class="flabel" style="margin-bottom:8px">화면 테마</div>
+    <div class="themes">${['light','dark','system'].map(t=>`<button class="theme-opt" data-act="setTheme" data-t="${t}" aria-pressed="${P.theme===t}">${svg(THEMES[t][0])}<span>${THEMES[t][1]}</span></button>`).join('')}</div></div>
+    <p class="notice">고른 테마는 이 기기에 저장돼요.</p>
+    <button class="btn block" data-act="close">닫기</button>`)},
   rec(id){const r=rec(id),ap=appealOf(id);sheet(`<h3>기록 상세</h3>${recDetail(r)}
     ${ap?`<div class="quote"><b>이의신청 (${AST[ap.status][1]})</b>\n${esc(ap.body)}</div>`:''}
     ${r.canceled?'':`<div class="field"><label for="cancelWhy">잘못 입력했다면 취소 사유를 적고 취소하세요</label><input class="input" id="cancelWhy" placeholder="예: 학생 잘못 선택"></div>
     <button class="btn danger block" data-act="cancelRec" data-id="${id}">이 기록 취소하기</button>`}
     <button class="btn block" data-act="close">닫기</button>`)},
   recS(id){const r=rec(id),ap=appealOf(id);sheet(`<h3>기록 상세</h3>${recDetail(r)}
-    ${ap?`<p class="notice">이 기록에는 이미 이의신청을 보냈어요 (${AST[ap.status][1]}).</p><a class="btn block" href="#s-appeals" data-act="close">이의신청 보기</a>`
+    ${ap?`<p class="notice">이 기록에는 이미 이의신청을 보냈어요 (${AST[ap.status][1]}).</p><button class="btn block" data-act="nav" data-r="s-appeals">이의신청 보기</button>`
       :r.canceled?'':`<button class="btn primary block" data-act="appealNew" data-id="${id}">이의신청하기</button>`}
     <button class="btn block" data-act="close">닫기</button>`)},
   appealT(id){const a=S.appeals.find(x=>x.id===id),r=rec(a.rec);sheet(`<h3>이의신청 처리</h3>${recDetail(r)}
@@ -673,8 +685,10 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'scrim': if(e.target===el) closeSheet(); return;
     case 'close': closeSheet(); return;
+    case 'nav': closeSheet(); go(el.dataset.r); return;
     case 'role': go(el.dataset.r==='t'?'t-home':'s-home'); return;
-    case 'theme': { const order=['system','light','dark']; P.theme=order[(order.indexOf(P.theme)+1)%3]; saveP(); applyTheme(); toast(THEMES[P.theme][1]+'으로 바꿨어요.'); return; }
+    case 'settings': SH.settings(); return;
+    case 'setTheme': P.theme=el.dataset.t; P.themeSet=true; saveP(); applyTheme(); SH.settings(); return;
     case 'statCls': V.statCls=el.dataset.c; break;
     case 'openStu': V.sel=el.dataset.hb; V.filter='all';
       P.recentSearch=[V.sel,...P.recentSearch.filter(h=>h!==V.sel)].slice(0,5); saveP(); go('t-search'); return;
@@ -777,8 +791,9 @@ document.addEventListener('change',e=>{
   else if(t.id==='gteacher'){render()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#sheetRoot').innerHTML)closeSheet()});
-window.addEventListener('hashchange',()=>{closeSheet();render();window.scrollTo(0,0)});
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(!validRoute(h)||h===CUR)return;CUR=h;closeSheet();render();window.scrollTo(0,0)});
 if(/Firefox\//.test(navigator.userAgent))document.documentElement.classList.add('ff');
+document.getElementById('settingsBtn').innerHTML=svg('gear');
 applyTheme();
 render();
 </script>
